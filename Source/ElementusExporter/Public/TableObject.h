@@ -7,6 +7,9 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "TableObject.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTableUpdated);
+
 /**
  * 
  */
@@ -23,6 +26,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	void InsertElement(const FVector2D& InPosition, const FString& InValue);
+
+	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
+	void AppendElements(const TMap<FVector2D, FString> InElements);
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	FString GetElement(const FVector2D& InPosition) const;
@@ -44,12 +50,20 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	void Destroy();
-	
+
+	UPROPERTY(BlueprintAssignable, Category = "Elementus Exporter | Delegates")
+	FOnTableUpdated OnTableUpdated;
+
+	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
+	void InsertionTest(const int32 MaxNum = 100);
+
 private:
-	mutable FCriticalSection Mutex;
-	
+	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true"))
 	TMap<FVector2D, FString> Elements;
-	uint16 MaxLines = 0, MaxColumns = 0;
+
+	mutable FCriticalSection Mutex;
+	uint32 MaxLines = 0, MaxColumns = 0;
 
 	void UpdateMaxValues_Internal();
+	void NotifyUpdate_Internal() const;
 };
