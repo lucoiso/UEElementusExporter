@@ -68,9 +68,9 @@ void UTableObject::ExportTable(const FString& InPath)
 			UpdateMaxValues_Internal();			
 
 			FString OutputStr;
-			for (uint8 Line = 0; Line <= MaxLines; ++Line)
+			for (uint16 Line = 0; Line <= MaxLines; ++Line)
 			{
-				for (uint8 Column = 0; Column <= MaxColumns; ++Column)
+				for (uint16 Column = 0; Column <= MaxColumns; ++Column)
 				{
 					OutputStr += GetElement(FVector2D(Column, Line)) + FString(Column == MaxColumns ? "\n" : ",");
 				}

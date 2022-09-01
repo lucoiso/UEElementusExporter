@@ -49,7 +49,7 @@ private:
 	mutable FCriticalSection Mutex;
 	
 	TMap<FVector2D, FString> Elements;
-	uint8 MaxLines = 0, MaxColumns = 0;
+	uint16 MaxLines = 0, MaxColumns = 0;
 
 	void UpdateMaxValues_Internal();
 };
