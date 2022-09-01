@@ -46,7 +46,7 @@ public:
 	void Destroy();
 	
 private:
-	FCriticalSection Mutex;
+	mutable FCriticalSection Mutex;
 	
 	TMap<FVector2D, FString> Elements;
 	uint8 MaxLines = 0, MaxColumns = 0;

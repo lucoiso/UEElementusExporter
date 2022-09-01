@@ -54,17 +54,17 @@ void UTableObject::ExportTable(const FString& InPath)
 			return;
 		}
 	}
-
-	FScopeLock Lock(&Mutex);
-	Elements.KeySort([](const FVector2D& InKey1, const FVector2D& InKey2)
-	{
-		return InKey1 < InKey2;
-	});
-
-	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [=]
+	
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [DestinationPath, this]
 	{
 		const TFuture<FString>& OutputStr_Future = Async(EAsyncExecution::Thread, [&]
 		{
+		    FScopeLock Lock(&Mutex);
+         	Elements.KeySort([](const FVector2D& InKey1, const FVector2D& InKey2)
+         	{
+         		return InKey1 < InKey2;
+         	});
+         	
 			UpdateMaxValues_Internal();			
 
 			FString OutputStr;
@@ -79,17 +79,21 @@ void UTableObject::ExportTable(const FString& InPath)
 			return OutputStr;
 		});
 		
-		OutputStr_Future.WaitFor(FTimespan::FromSeconds(5));
+		if (!OutputStr_Future.WaitFor(FTimespan::FromSeconds(5)))
+		{
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Failed to generate the output string."));
+			return;
+		}
+		
 		if (FFileHelper::SaveStringToFile(OutputStr_Future.Get(), *DestinationPath))
 		{
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Success"));
 		}
 		else
 		{
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Fail"));
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Failed to save the file."));
 		}
 	});
-	FScopeUnlock Unlock(&Mutex);
 }
 
 FString UTableObject::GetNewFilePath()
@@ -98,14 +102,14 @@ FString UTableObject::GetNewFilePath()
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 	TArray<FString> FileName_Arr;
-	if (IDesktopPlatform* NewPlatform = FDesktopPlatformModule::Get();
-		NewPlatform->SaveFileDialog(nullptr,
-									"Save Simulation Data",
-									FString(),
-									"QueueSimulator_OutputData.csv",
-									"CSV files (*.csv)|*.csv",
-									EFileDialogFlags::None,
-									FileName_Arr))
+	if (IDesktopPlatform* Platform = FDesktopPlatformModule::Get();
+		Platform->SaveFileDialog(nullptr,
+								 "Save File",
+								 FString(),
+								 "OutputData.csv",
+								 "CSV files (*.csv)|*.csv",
+								 EFileDialogFlags::None,
+								 FileName_Arr))
 	{
 		UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - %s: Result: Success"), *FString(__func__));
 
@@ -119,8 +123,8 @@ FString UTableObject::GetNewFilePath()
 	}
 #else
 	UE_LOG(LogTemp, Error,
-		TEXT("Elementus Exporter - %s: Platform %s is not supported"),
-		*FString(__func__), *UGameplayStatics::GetPlatformName());
+		   TEXT("Elementus Exporter - %s: Platform %s is not supported"),
+		   *FString(__func__), *UGameplayStatics::GetPlatformName());
 #endif
 
 	return OutputPath;
