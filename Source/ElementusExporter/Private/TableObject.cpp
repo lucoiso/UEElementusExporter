@@ -12,7 +12,6 @@
 #include "Kismet/GameplayStatics.h"
 #endif
 
-
 UTableObject::UTableObject(const FObjectInitializer& Initializer)
 	: Super(Initializer)
 {
@@ -20,46 +19,34 @@ UTableObject::UTableObject(const FObjectInitializer& Initializer)
 
 TMap<FVector2D, FString> UTableObject::GetTableElements() const
 {
-	FScopeLock Lock(&Mutex);
-
 	return Elements;
 }
 
 void UTableObject::InsertElement(const FVector2D& InPosition, const FString& InValue)
 {
-	FScopeLock Lock(&Mutex);
-
 	Elements.Add(InPosition, InValue);
 	NotifyUpdate_Internal();
 }
 
 void UTableObject::AppendElements(const TMap<FVector2D, FString> InElements)
 {
-	FScopeLock Lock(&Mutex);
-
 	Elements.Append(InElements);
 	NotifyUpdate_Internal();
 }
 
 FString UTableObject::GetElement(const FVector2D& InPosition) const
 {
-	FScopeLock Lock(&Mutex);
-
 	return Elements.FindRef(InPosition);
 }
 
 void UTableObject::RemoveElement(const FVector2D& InPosition)
 {
-	FScopeLock Lock(&Mutex);
-
 	Elements.Remove(InPosition);
 	NotifyUpdate_Internal();
 }
 
 void UTableObject::ClearTable()
 {
-	FScopeLock Lock(&Mutex);
-
 	Elements.Empty();
 	NotifyUpdate_Internal();
 }
@@ -81,16 +68,22 @@ void UTableObject::ExportTable(const FString& InPath)
 	{
 		const TFuture<TArray<FString>>& OutputStr_Future = Async(EAsyncExecution::Thread, [&]
 		{
-			FScopeLock Lock(&Mutex);
-
-			UE_LOG(LogTemp, Warning, TEXT("Exporting table to %s"), *DestinationPath);
+			FScopeLock Lock(&Mutex);			
+			
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Path: %s"), *DestinationPath);
 			Elements.KeySort([](const FVector2D& InKey1, const FVector2D& InKey2)
 			{
 				return InKey1 < InKey2;
 			});
-
+						
 			UpdateMaxValues_Internal();
+			
+			const int32 MaxValues = MaxColumns * MaxLines;
+			const float ProgressStep = 1.f / (MaxValues + 1.f);
+			float CurrentValue = 0.f;
 
+			OnTableExportProgressChanged.Broadcast(CurrentValue);
+			
 			TArray<FString> LinesArr;
 			for (uint32 Line = 0; Line <= MaxLines; ++Line)
 			{
@@ -98,6 +91,9 @@ void UTableObject::ExportTable(const FString& InPath)
 				for (uint32 Column = 0; Column <= MaxColumns; ++Column)
 				{
 					ColumnStr += GetElement(FVector2D(Column, Line));
+					
+					CurrentValue += ProgressStep;
+					OnTableExportProgressChanged.Broadcast(CurrentValue);
 				}
 				LinesArr.Add(ColumnStr);
 			}
@@ -112,10 +108,12 @@ void UTableObject::ExportTable(const FString& InPath)
 		}
 		if (FFileHelper::SaveStringArrayToFile(OutputStr_Future.Get(), *DestinationPath))
 		{
+			OnTableExportProgressChanged.Broadcast(1.f);
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Success"));
 		}
 		else
 		{
+			OnTableExportProgressChanged.Broadcast(-1.f);
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Failed to save the file."));
 		}
 	});
@@ -142,14 +140,14 @@ FString UTableObject::GetNewFilePath()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error,
-		       TEXT("Elementus Exporter - %s: Result: Failed to open a folder picker or the user cancelled the operation"),
-		       *FString(__func__));
+		UE_LOG(LogTemp, Error, 
+			TEXT("Elementus Exporter - %s: Result: Failed to open a folder picker or the user cancelled the operation"), 
+			*FString(__func__));
 	}
 #else
-	UE_LOG(LogTemp, Error,
-		   TEXT("Elementus Exporter - %s: Platform %s is not supported"),
-		   *FString(__func__), *UGameplayStatics::GetPlatformName());
+	UE_LOG(LogTemp, Error, 
+		TEXT("Elementus Exporter - %s: Platform %s is not supported"), 
+		*FString(__func__), *UGameplayStatics::GetPlatformName());
 #endif
 
 	return OutputPath;
@@ -173,15 +171,15 @@ void UTableObject::InsertionTest(const int32 MaxNum)
 
 		for (int32 i = 0; i < MaxNum; ++i)
 		{
-			InsertElement(FVector2D(0, i), "test");
+			Elements.Add(FVector2D(0, i), "Test");
 		}
+
+		NotifyUpdate_Internal();
 	});
 }
 
 void UTableObject::UpdateMaxValues_Internal()
 {
-	FScopeLock Lock(&Mutex);
-
 	for (const auto& Iterator : Elements)
 	{
 		if (Iterator.Key.X > MaxColumns)

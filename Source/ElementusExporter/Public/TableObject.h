@@ -9,6 +9,7 @@
 #include "TableObject.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTableUpdated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTableExportProgressChanged, const float, Progress);
 
 /**
  * 
@@ -53,6 +54,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Elementus Exporter | Delegates")
 	FOnTableUpdated OnTableUpdated;
+
+	UPROPERTY(BlueprintAssignable, Category = "Elementus Exporter | Delegates")
+	FOnTableExportProgressChanged OnTableExportProgressChanged;
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	void InsertionTest(const int32 MaxNum = 100);
