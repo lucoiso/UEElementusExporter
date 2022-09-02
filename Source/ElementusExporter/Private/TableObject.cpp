@@ -92,7 +92,12 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 				FString ColumnStr;
 				for (uint32 Column = 0; Column <= MaxColumns; ++Column)
 				{
-					if (IsPendingCancel() || IsPendingKill())
+					if (!IsValid(this))
+					{
+						return TArray<FString>();
+					}
+
+					if (IsPendingCancel())
 					{
 						bIsPendingCancel = false;
 						return TArray<FString>();
