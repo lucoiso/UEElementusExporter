@@ -51,26 +51,20 @@ void UTableObject::ClearTable()
 	NotifyUpdate_Internal();
 }
 
-void UTableObject::ExportTable(const FString& InPath)
+void UTableObject::ExportTable(const bool bClearAtComplete)
 {
-	FString DestinationPath = InPath;
-	if (DestinationPath.Equals("None", ESearchCase::IgnoreCase) || DestinationPath.IsEmpty())
+	if (DestinationFilePath.IsEmpty() && !SetFilePath())
 	{
-		DestinationPath = GetNewFilePath();
-
-		if (DestinationPath.IsEmpty())
-		{
-			return;
-		}
+		return;
 	}
 
-	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [DestinationPath, this]
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [bClearAtComplete, this]
 	{
 		const TFuture<TArray<FString>>& OutputStr_Future = Async(EAsyncExecution::Thread, [&]
 		{
-			FScopeLock Lock(&Mutex);			
+			FScopeLock Lock(&Mutex);
 			
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Path: %s"), *DestinationPath);
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: File Path: %s"), *DestinationFilePath);
 			Elements.KeySort([](const FVector2D& InKey1, const FVector2D& InKey2)
 			{
 				return InKey1 < InKey2;
@@ -79,10 +73,12 @@ void UTableObject::ExportTable(const FString& InPath)
 			UpdateMaxValues_Internal();
 			
 			const int32 MaxValues = MaxColumns * MaxLines;
-			const float ProgressStep = 1.f / (MaxValues + 1.f);
-			float CurrentValue = 0.f;
+			const float ProgressStep = 1.f / MaxValues;
+			float CurrentProgress = 0.f;
 
-			OnTableExportProgressChanged.Broadcast(CurrentValue);
+			uint8 PreviousPercentInt = 0;
+			
+			NotifyProgress_Internal(CurrentProgress);
 			
 			TArray<FString> LinesArr;
 			for (uint32 Line = 0; Line <= MaxLines; ++Line)
@@ -90,10 +86,24 @@ void UTableObject::ExportTable(const FString& InPath)
 				FString ColumnStr;
 				for (uint32 Column = 0; Column <= MaxColumns; ++Column)
 				{
-					ColumnStr += GetElement(FVector2D(Column, Line));
+					if (IsPendingCancel())
+					{
+						bIsPendingCancel = false;
+						return TArray<FString>();
+					}
 					
-					CurrentValue += ProgressStep;
-					OnTableExportProgressChanged.Broadcast(CurrentValue);
+					ColumnStr += GetElement(FVector2D(Column, Line)) + ",";
+
+					CurrentProgress += ProgressStep;
+					
+					// Only notify if the progress change is greater than 1% 
+					// to avoid throw a exception due to +1mi iterations if the table is too big
+					if (const uint16 CurrentIntegerProgress = static_cast<uint16>(CurrentProgress * 100);
+						CurrentIntegerProgress > PreviousPercentInt)
+					{
+						NotifyProgress_Internal(CurrentProgress);
+						PreviousPercentInt = CurrentIntegerProgress;
+					}
 				}
 				LinesArr.Add(ColumnStr);
 			}
@@ -106,20 +116,82 @@ void UTableObject::ExportTable(const FString& InPath)
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Failed to generate the output string."));
 			return;
 		}
-		if (FFileHelper::SaveStringArrayToFile(OutputStr_Future.Get(), *DestinationPath))
+
+		if (const TArray<FString> OutputStrArr = OutputStr_Future.Get();
+		#if ENGINE_MAJOR_VERSION >= 5
+			OutputStrArr.IsEmpty()
+		#else
+			OutputStrArr.Num() == 0
+		#endif
+		)
 		{
-			OnTableExportProgressChanged.Broadcast(1.f);
+			NotifyProgress_Internal(-1.f);
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: The process was cancelled."));
+		}
+		else if (FFileHelper::SaveStringArrayToFile(OutputStr_Future.Get(), *DestinationFilePath))
+		{
+			// Ensure that the 100% progress is notified
+			NotifyProgress_Internal(1.f);
+			
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Success"));
+
+			if (bClearAtComplete)
+			{
+				DestinationFilePath.Empty();
+				ClearTable();
+			}
 		}
 		else
 		{
-			OnTableExportProgressChanged.Broadcast(-1.f);
+			NotifyProgress_Internal(-1.f);
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Failed to save the file."));
 		}
 	});
 }
 
-FString UTableObject::GetNewFilePath()
+void UTableObject::CancelExport()
+{
+	bIsPendingCancel = true;
+}
+
+bool UTableObject::IsPendingCancel() const
+{
+	return bIsPendingCancel;
+}
+
+bool UTableObject::SetFilePath(const FString InPath)
+{
+	if (InPath.Equals("None", ESearchCase::IgnoreCase) || InPath.IsEmpty())
+	{
+		const FString Candidate = SaveNewCSV();
+
+		if (!Candidate.IsEmpty())
+		{
+			DestinationFilePath = Candidate;			
+			return true;
+		}
+	}
+	else if (FText OutMsg;
+		InPath.EndsWith(".csv")
+		&& FFileHelper::IsFilenameValidForSaving(InPath, OutMsg))
+	{
+		DestinationFilePath = InPath;
+		return true;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ElementusExporter - %s: Failed to set a new file path: %s"), *FString(__func__), *OutMsg.ToString());
+	}
+	
+	return false;
+}
+
+FString UTableObject::GetDestinationFilePath() const
+{
+	return DestinationFilePath;
+}
+
+FString UTableObject::SaveNewCSV()
 {
 	FString OutputPath;
 
@@ -169,9 +241,12 @@ void UTableObject::InsertionTest(const int32 MaxNum)
 	{
 		FScopeLock Lock(&Mutex);
 
-		for (int32 i = 0; i < MaxNum; ++i)
+		for (int32 Line = 0; Line < MaxNum; ++Line)
 		{
-			Elements.Add(FVector2D(0, i), "Test");
+			for (int32 Column = 0; Column < MaxNum; ++Column)
+			{
+				Elements.Add(FVector2D(Column, Line), FString::Printf(TEXT("TESTING_L%d_C%d"), Line, Column));
+			}
 		}
 
 		NotifyUpdate_Internal();
@@ -196,5 +271,16 @@ void UTableObject::UpdateMaxValues_Internal()
 
 void UTableObject::NotifyUpdate_Internal() const
 {
-	OnTableUpdated.Broadcast();
+	if (OnTableUpdated.IsBound())
+	{
+		OnTableUpdated.Broadcast();
+	}
+}
+
+void UTableObject::NotifyProgress_Internal(const float InProgress) const
+{
+	if (OnTableExportProgressChanged.IsBound())
+	{
+		OnTableExportProgressChanged.Broadcast(InProgress);
+	}
 }

@@ -41,10 +41,19 @@ public:
 	void ClearTable();
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	void ExportTable(const FString& InPath = "None");
+	void ExportTable(const bool bClearAtComplete = true);
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	static FString GetNewFilePath();
+	void CancelExport();
+
+	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
+	bool SetFilePath(const FString InPath = "None");
+
+	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
+	FString GetDestinationFilePath() const;
+	
+	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions", meta = (DisplayName = "Save New CSV"))
+	static FString SaveNewCSV();
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	static UTableObject* CreateTableObject();
@@ -61,13 +70,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	void InsertionTest(const int32 MaxNum = 100);
 
+protected:
+	bool IsPendingCancel() const;
+
+	void UpdateMaxValues_Internal();
+
+	void NotifyUpdate_Internal() const;
+	void NotifyProgress_Internal(const float InProgress) const;
+
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true"))
 	TMap<FVector2D, FString> Elements;
 
 	mutable FCriticalSection Mutex;
 	uint32 MaxLines = 0, MaxColumns = 0;
+	FString DestinationFilePath;
 
-	void UpdateMaxValues_Internal();
-	void NotifyUpdate_Internal() const;
+	bool bIsPendingCancel = false;
 };
