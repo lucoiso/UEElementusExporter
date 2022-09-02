@@ -76,11 +76,7 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Task Initialized"));			
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Exporting to: %s"), *DestinationFilePath);
-			Elements.KeySort([](const FVector2D& InKey1, const FVector2D& InKey2)
-			{
-				return InKey1 < InKey2;
-			});
-						
+			
 			UpdateMaxValues_Internal();
 			
 			const int32 MaxValues = MaxColumns * MaxLines;
