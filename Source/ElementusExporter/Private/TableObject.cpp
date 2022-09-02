@@ -266,6 +266,11 @@ void UTableObject::InsertionTest(const int32 MaxNum)
 		{
 			for (int32 Column = 0; Column < MaxNum; ++Column)
 			{
+				if (!IsValid(this))
+				{
+					return;
+				}
+				
 				Elements.Add(FVector2D(Column, Line), FString::Printf(TEXT("TESTING_L%d_C%d"), Line, Column));
 			}
 		}
