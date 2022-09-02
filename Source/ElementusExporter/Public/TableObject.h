@@ -41,7 +41,7 @@ public:
 	void ClearTable();
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	void ExportTable(const bool bClearAtComplete = true);
+	void ExportTable(const bool bClearAtComplete = true, const float TimeoutSeconds = 300.f);
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	void CancelExport();
@@ -52,8 +52,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	FString GetDestinationFilePath() const;
 	
-	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions", meta = (DisplayName = "Save New CSV"))
-	static FString SaveNewCSV();
+	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions", meta = (DisplayName = "Open Save CSV Dialog"))
+	static FString OpenSaveCSVDialog();
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	static UTableObject* CreateTableObject();

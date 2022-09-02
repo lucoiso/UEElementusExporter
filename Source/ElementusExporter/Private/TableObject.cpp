@@ -56,20 +56,21 @@ void UTableObject::ClearTable()
 	NotifyUpdate_Internal();
 }
 
-void UTableObject::ExportTable(const bool bClearAtComplete)
+void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutSeconds)
 {
 	if (DestinationFilePath.IsEmpty() && !SetFilePath())
 	{
 		return;
 	}
 
-	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [bClearAtComplete, this]
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [bClearAtComplete, TimeoutSeconds, this]
 	{
 		const TFuture<TArray<FString>>& OutputStr_Future = Async(EAsyncExecution::Thread, [&]
 		{
 			FScopeLock Lock(&Mutex);
 			
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: File Path: %s"), *DestinationFilePath);
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Task Initialized"));			
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Exporting to: %s"), *DestinationFilePath);
 			Elements.KeySort([](const FVector2D& InKey1, const FVector2D& InKey2)
 			{
 				return InKey1 < InKey2;
@@ -91,7 +92,7 @@ void UTableObject::ExportTable(const bool bClearAtComplete)
 				FString ColumnStr;
 				for (uint32 Column = 0; Column <= MaxColumns; ++Column)
 				{
-					if (IsPendingCancel())
+					if (IsPendingCancel() || IsPendingKill())
 					{
 						bIsPendingCancel = false;
 						return TArray<FString>();
@@ -115,10 +116,12 @@ void UTableObject::ExportTable(const bool bClearAtComplete)
 
 			return LinesArr;
 		});
-
-		if (!OutputStr_Future.WaitFor(FTimespan::FromSeconds(5)))
+		
+		if (!OutputStr_Future.WaitFor(FTimespan::FromSeconds(TimeoutSeconds)))
 		{
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Failed to generate the output string."));
+			UE_LOG(LogTemp, Warning, 
+				TEXT("Elementus Exporter - ExportTable: Result: Fail - Took too long to export the table"));
+			
 			return;
 		}
 
@@ -130,15 +133,17 @@ void UTableObject::ExportTable(const bool bClearAtComplete)
 		#endif
 		)
 		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("Elementus Exporter - ExportTable: Result: Fail - The process was cancelled."));
+			
 			NotifyProgress_Internal(-1.f);
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: The process was cancelled."));
 		}
 		else if (FFileHelper::SaveStringArrayToFile(OutputStr_Future.Get(), *DestinationFilePath))
 		{
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Success - Table exported"));
+			
 			// Ensure that the 100% progress is notified
 			NotifyProgress_Internal(1.f);
-			
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Success"));
 
 			if (bClearAtComplete)
 			{
@@ -148,8 +153,8 @@ void UTableObject::ExportTable(const bool bClearAtComplete)
 		}
 		else
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Elementus Exporter - ExportTable: Result: Fail - Failed to save the file."));
 			NotifyProgress_Internal(-1.f);
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Failed to save the file."));
 		}
 	});
 }
@@ -168,7 +173,7 @@ bool UTableObject::SetFilePath(const FString InPath)
 {
 	if (InPath.Equals("None", ESearchCase::IgnoreCase) || InPath.IsEmpty())
 	{
-		const FString Candidate = SaveNewCSV();
+		const FString Candidate = OpenSaveCSVDialog();
 
 		if (!Candidate.IsEmpty())
 		{
@@ -185,7 +190,9 @@ bool UTableObject::SetFilePath(const FString InPath)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("ElementusExporter - %s: Failed to set a new file path: %s"), *FString(__func__), *OutMsg.ToString());
+		UE_LOG(LogTemp, Warning, 
+			TEXT("ElementusExporter - %s: Result: Fail - Failed to set new file path: %s"), 
+			*FString(__func__), *OutMsg.ToString());
 	}
 	
 	return false;
@@ -196,7 +203,7 @@ FString UTableObject::GetDestinationFilePath() const
 	return DestinationFilePath;
 }
 
-FString UTableObject::SaveNewCSV()
+FString UTableObject::OpenSaveCSVDialog()
 {
 	FString OutputPath;
 
@@ -211,19 +218,19 @@ FString UTableObject::SaveNewCSV()
 		                         EFileDialogFlags::None,
 		                         FileName_Arr))
 	{
-		UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - %s: Result: Success"), *FString(__func__));
+		UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - %s: Result: Success - File path updated"), *FString(__func__));
 
 		OutputPath = FileName_Arr[0];
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, 
-			TEXT("Elementus Exporter - %s: Result: Failed to open a folder picker or the user cancelled the operation"), 
+			TEXT("Elementus Exporter - %s: Result: Fail - Failed to open a folder picker or the user cancelled the operation"), 
 			*FString(__func__));
 	}
 #else
 	UE_LOG(LogTemp, Error, 
-		TEXT("Elementus Exporter - %s: Platform %s is not supported"), 
+		TEXT("Elementus Exporter - %s: Result: Fail - Platform %s is not supported"), 
 		*FString(__func__), *UGameplayStatics::GetPlatformName());
 #endif
 
