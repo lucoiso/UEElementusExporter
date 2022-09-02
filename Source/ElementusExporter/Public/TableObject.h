@@ -41,7 +41,7 @@ public:
 	void ClearTable();
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	void ExportTable(const bool bClearAtComplete = true, const float TimeoutSeconds = 300.f);
+	void ExportTable(const bool bClearAtComplete = true, const float TimeoutSeconds = 150.f);
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	void CancelExport();
@@ -68,7 +68,7 @@ public:
 	FOnTableExportProgressChanged OnTableExportProgressChanged;
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	void InsertionTest(const int32 MaxNum = 100);
+	void InsertionTest(const int32 MaxNum = 999);
 
 protected:
 	bool IsPendingCancel() const;
