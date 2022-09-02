@@ -223,9 +223,11 @@ FString UTableObject::OpenSaveCSVDialog()
 		                         EFileDialogFlags::None,
 		                         FileName_Arr))
 	{
-		UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - %s: Result: Success - File path updated"), *FString(__func__));
-
 		OutputPath = FileName_Arr[0];
+		
+		UE_LOG(LogTemp, Display, 
+			TEXT("Elementus Exporter - %s: Result: Success - File path updated to: %s"), 
+			*FString(__func__), *OutputPath);
 	}
 	else
 	{
