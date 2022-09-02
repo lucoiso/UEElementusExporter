@@ -5,6 +5,11 @@
 #include "TableObject.h"
 #include "Async/Async.h"
 #include "Misc/ScopeLock.h"
+#include "Misc/FileHelper.h"
+
+#ifndef ENGINE_MAJOR_VERSION
+#include "Runtime/Launch/Resources/Version.h"
+#endif
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 #include "DesktopPlatformModule.h"
@@ -232,7 +237,11 @@ UTableObject* UTableObject::CreateTableObject()
 
 void UTableObject::Destroy()
 {
+#if ENGINE_MAJOR_VERSION >= 5
 	MarkAsGarbage();
+#else
+	MarkPendingKill();
+#endif
 }
 
 void UTableObject::InsertionTest(const int32 MaxNum)
