@@ -68,7 +68,12 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 		const TFuture<TArray<FString>>& OutputStr_Future = Async(EAsyncExecution::Thread, [&]
 		{
 			FScopeLock Lock(&Mutex);
-			
+
+			if (IsPendingCancel())
+			{
+				return TArray<FString>();
+			}
+
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Task Initialized"));			
 			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Exporting to: %s"), *DestinationFilePath);
 			Elements.KeySort([](const FVector2D& InKey1, const FVector2D& InKey2)
@@ -92,14 +97,8 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 				FString ColumnStr;
 				for (uint32 Column = 0; Column <= MaxColumns; ++Column)
 				{
-					if (!IsValid(this))
-					{
-						return TArray<FString>();
-					}
-
 					if (IsPendingCancel())
 					{
-						bIsPendingCancel = false;
 						return TArray<FString>();
 					}
 					
@@ -171,7 +170,20 @@ void UTableObject::CancelExport()
 
 bool UTableObject::IsPendingCancel() const
 {
-	return bIsPendingCancel;
+	const bool bOutput = !IsValid(this) || bIsPendingCancel;
+
+	// Return the value to its default state as we are returning a copy considering if this is still valid
+	// This will allow us to avoid changing this everytime we cancel a task
+	bIsPendingCancel = !IsValid(this);
+	
+	return bOutput;
+}
+
+void UTableObject::BeginDestroy()
+{
+	Destroy();
+
+	Super::BeginDestroy();
 }
 
 bool UTableObject::SetFilePath(const FString InPath)
@@ -251,6 +263,8 @@ UTableObject* UTableObject::CreateTableObject()
 
 void UTableObject::Destroy()
 {
+	bIsPendingCancel = true;
+	
 #if ENGINE_MAJOR_VERSION >= 5
 	MarkAsGarbage();
 #else
@@ -267,12 +281,12 @@ void UTableObject::InsertionTest(const int32 MaxNum)
 		for (int32 Line = 0; Line < MaxNum; ++Line)
 		{
 			for (int32 Column = 0; Column < MaxNum; ++Column)
-			{
-				if (!IsValid(this))
+			{				
+				if (!IsValid(this) || IsPendingCancel())
 				{
 					return;
 				}
-				
+
 				Elements.Add(FVector2D(Column, Line), FString::Printf(TEXT("TESTING_L%d_C%d"), Line, Column));
 			}
 		}

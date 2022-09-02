@@ -73,6 +73,8 @@ public:
 protected:
 	bool IsPendingCancel() const;
 
+	virtual void BeginDestroy() override;
+
 	void UpdateMaxValues_Internal();
 
 	void NotifyUpdate_Internal() const;
@@ -82,9 +84,12 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true"))
 	TMap<FVector2D, FString> Elements;
 
-	mutable FCriticalSection Mutex;
-	uint32 MaxLines = 0, MaxColumns = 0;
+	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true"))
 	FString DestinationFilePath;
 
-	bool bIsPendingCancel = false;
+	uint32 MaxLines = 0, MaxColumns = 0;
+	
+	mutable bool bIsPendingCancel = false;
+	
+	mutable FCriticalSection Mutex;
 };
