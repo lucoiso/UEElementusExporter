@@ -65,7 +65,7 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 
 	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [bClearAtComplete, TimeoutSeconds, this]
 	{
-		const TFuture<TArray<FString>>& OutputStr_Future = Async(EAsyncExecution::Thread, [&]
+		const TFuture<TArray<FString>> OutputStr_Future = Async(EAsyncExecution::Thread, [&]
 		{
 			FScopeLock Lock(&Mutex);
 
@@ -293,7 +293,7 @@ void UTableObject::InsertionTest(const int32 MaxNum)
 
 void UTableObject::UpdateMaxValues_Internal()
 {
-	for (const auto& Iterator : Elements)
+	for (const TPair<FVector2D, FString>& Iterator : Elements)
 	{
 		if (Iterator.Key.X > MaxColumns)
 		{
