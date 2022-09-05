@@ -29,7 +29,7 @@ public:
 	void InsertElement(const FVector2D& InPosition, const FString& InValue);
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	void AppendElements(const TMap<FVector2D, FString> InElements);
+	void AppendElements(const TMap<FVector2D, FString>& InElements);
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	FString GetElement(const FVector2D& InPosition) const;

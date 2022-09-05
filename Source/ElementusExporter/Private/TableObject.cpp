@@ -33,7 +33,7 @@ void UTableObject::InsertElement(const FVector2D& InPosition, const FString& InV
 	NotifyUpdate_Internal();
 }
 
-void UTableObject::AppendElements(const TMap<FVector2D, FString> InElements)
+void UTableObject::AppendElements(const TMap<FVector2D, FString>& InElements)
 {
 	Elements.Append(InElements);
 	NotifyUpdate_Internal();
