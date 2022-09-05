@@ -47,7 +47,7 @@ public:
 	void CancelExport();
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	bool SetFilePath(const FString InPath = "None");
+	bool SetFilePath(const FString& InPath = "None");
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	FString GetDestinationFilePath() const;

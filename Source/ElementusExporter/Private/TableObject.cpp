@@ -182,7 +182,7 @@ void UTableObject::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-bool UTableObject::SetFilePath(const FString InPath)
+bool UTableObject::SetFilePath(const FString& InPath)
 {
 	if (InPath.Equals("None", ESearchCase::IgnoreCase) || InPath.IsEmpty())
 	{
