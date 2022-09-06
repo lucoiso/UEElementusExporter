@@ -47,7 +47,7 @@ public:
 	void CancelExport();
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
-	bool SetFilePath(const FString& InPath = "None");
+	bool SetDestinationFilePath(const FString& InPath = "None");
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	FString GetDestinationFilePath() const;
@@ -84,7 +84,8 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true"))
 	TMap<FVector2D, FString> Elements;
 
-	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", 
+		meta = (AllowPrivateAccess = "true", Getter = "GetDestinationFilePath", Setter = "SetDestinationFilePath"))
 	FString DestinationFilePath;
 
 	uint32 MaxLines = 0, MaxColumns = 0;

@@ -58,7 +58,7 @@ void UTableObject::ClearTable()
 
 void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutSeconds)
 {
-	if (DestinationFilePath.IsEmpty() && !SetFilePath())
+	if (DestinationFilePath.IsEmpty() && !SetDestinationFilePath())
 	{
 		return;
 	}
@@ -182,7 +182,7 @@ void UTableObject::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-bool UTableObject::SetFilePath(const FString& InPath)
+bool UTableObject::SetDestinationFilePath(const FString& InPath)
 {
 	if (InPath.Equals("None", ESearchCase::IgnoreCase) || InPath.IsEmpty())
 	{
