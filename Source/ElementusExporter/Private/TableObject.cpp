@@ -63,7 +63,7 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 		return;
 	}
 
-	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [bClearAtComplete, TimeoutSeconds, this]
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [FuncName = __func__, bClearAtComplete, TimeoutSeconds, this]
 	{
 		const TFuture<TArray<FString>> OutputStr_Future = Async(EAsyncExecution::Thread, [&]
 		{
@@ -74,8 +74,8 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 				return TArray<FString>();
 			}
 
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Task Initialized"));			
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Exporting to: %s"), *DestinationFilePath);
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - %s: Task Initialized"), *FString(FuncName));			
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - %s: Exporting to: %s"), *FString(FuncName), *DestinationFilePath);
 			
 			UpdateMaxValues_Internal();
 			
@@ -120,7 +120,7 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 		if (!OutputStr_Future.WaitFor(FTimespan::FromSeconds(TimeoutSeconds)))
 		{
 			UE_LOG(LogTemp, Warning, 
-				TEXT("Elementus Exporter - ExportTable: Result: Fail - Took too long to export the table"));
+				TEXT("Elementus Exporter - %s: Result: Fail - Took too long to export the table"), *FString(FuncName));
 			
 			return;
 		}
@@ -134,13 +134,13 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 		)
 		{
 			UE_LOG(LogTemp, Warning,
-				TEXT("Elementus Exporter - ExportTable: Result: Fail - The process was cancelled."));
+				TEXT("Elementus Exporter - %s: Result: Fail - The process was cancelled."), *FString(FuncName));
 			
 			NotifyProgress_Internal(-1.f);
 		}
 		else if (FFileHelper::SaveStringArrayToFile(OutputStr_Future.Get(), *DestinationFilePath))
 		{
-			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - ExportTable: Result: Success - Table exported"));
+			UE_LOG(LogTemp, Display, TEXT("Elementus Exporter - %s: Result: Success - Table exported"), *FString(FuncName));
 			
 			// Ensure that the 100% progress is notified
 			NotifyProgress_Internal(1.f);
@@ -153,7 +153,7 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Elementus Exporter - ExportTable: Result: Fail - Failed to save the file."));
+			UE_LOG(LogTemp, Warning, TEXT("Elementus Exporter - %s: Result: Fail - Failed to save the file."), *FString(FuncName));
 			NotifyProgress_Internal(-1.f);
 		}
 	});
@@ -222,7 +222,7 @@ FString UTableObject::OpenSaveCSVDialog()
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 	TArray<FString> FileName_Arr;
-	if (IDesktopPlatform* Platform = FDesktopPlatformModule::Get();
+	if (IDesktopPlatform* const Platform = FDesktopPlatformModule::Get();
 		Platform->SaveFileDialog(nullptr,
 		                         "Save File",
 		                         FString(),
