@@ -177,7 +177,7 @@ bool UTableObject::IsPendingCancel() const
 
 void UTableObject::BeginDestroy()
 {
-	Destroy();
+	bIsPendingCancel = true;
 
 	Super::BeginDestroy();
 }
