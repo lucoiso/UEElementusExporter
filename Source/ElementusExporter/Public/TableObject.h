@@ -9,6 +9,7 @@
 #include "TableObject.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTableUpdated);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTableExportProgressChanged, const float, Progress);
 
 /**
@@ -51,7 +52,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	FString GetDestinationFilePath() const;
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions", meta = (DisplayName = "Open Save CSV Dialog"))
 	static FString OpenSaveCSVDialog();
 
@@ -84,13 +85,12 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true"))
 	TMap<FVector2D, FString> Elements;
 
-	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", 
-		meta = (AllowPrivateAccess = "true", Getter = "GetDestinationFilePath", Setter = "SetDestinationFilePath"))
+	UPROPERTY(VisibleAnywhere, Category = "Elementus Exporter | Properties", meta = (AllowPrivateAccess = "true", Getter = "GetDestinationFilePath", Setter = "SetDestinationFilePath"))
 	FString DestinationFilePath;
 
 	uint32 MaxLines = 0, MaxColumns = 0;
-	
+
 	mutable bool bIsPendingCancel = false;
-	
+
 	mutable FCriticalSection Mutex;
 };
