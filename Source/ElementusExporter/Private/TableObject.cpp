@@ -103,7 +103,7 @@ void UTableObject::ExportTable(const bool bClearAtComplete, const float TimeoutS
 
 					// Only notify if the progress change is greater than 1% 
 					// to avoid throw a exception due to +1mi iterations if the table is too big
-					if (const uint16 CurrentIntegerProgress = static_cast<uint16>(CurrentProgress * 100); 
+					if (const uint16 CurrentIntegerProgress = static_cast<uint16>(CurrentProgress * 100);
 						CurrentIntegerProgress > PreviousPercentInt)
 					{
 						NotifyProgress_Internal(CurrentProgress);
@@ -191,7 +191,7 @@ bool UTableObject::SetDestinationFilePath(const FString& InPath)
 			return true;
 		}
 	}
-	else if (FText OutMsg; 
+	else if (FText OutMsg;
 		InPath.EndsWith(".csv") && FFileHelper::IsFilenameValidForSaving(InPath, OutMsg))
 	{
 		DestinationFilePath = InPath;
@@ -216,7 +216,7 @@ FString UTableObject::OpenSaveCSVDialog()
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 	TArray<FString> FileName_Arr;
-	if (IDesktopPlatform* const Platform = FDesktopPlatformModule::Get(); 
+	if (IDesktopPlatform* const Platform = FDesktopPlatformModule::Get();
 		Platform->SaveFileDialog(nullptr, "Save File", FString(), "OutputData.csv", "CSV files (*.csv)|*.csv", EFileDialogFlags::None, FileName_Arr))
 	{
 		OutputPath = FileName_Arr[0];
