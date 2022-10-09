@@ -21,7 +21,7 @@ class ELEMENTUSEXPORTER_API UTableObject final : public UObject
 	GENERATED_BODY()
 
 public:
-	explicit UTableObject(const FObjectInitializer& Initializer);
+	explicit UTableObject(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	UFUNCTION(BlueprintCallable, Category = "Elementus Exporter | Functions")
 	TMap<FVector2D, FString> GetTableElements() const;
