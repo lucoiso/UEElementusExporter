@@ -15,7 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTableExportProgressChanged, const
 /**
  * 
  */
-UCLASS(Blueprintable, NotPlaceable, Category = "Elementus Exporter | Classes")
+UCLASS(Blueprintable, EditInlineNew, NotPlaceable, Category = "Elementus Exporter | Classes")
 class ELEMENTUSEXPORTER_API UTableObject final : public UObject
 {
 	GENERATED_BODY()
