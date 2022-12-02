@@ -3,18 +3,18 @@
 // Repo: https://github.com/lucoiso/UEElementusExporter
 
 #include "TableObject.h"
-#include "Async/Async.h"
-#include "Misc/ScopeLock.h"
-#include "Misc/FileHelper.h"
+#include <Async/Async.h>
+#include <Misc/ScopeLock.h>
+#include <Misc/FileHelper.h>
 
 #ifndef ENGINE_MAJOR_VERSION
-#include "Runtime/Launch/Resources/Version.h"
+#include <Runtime/Launch/Resources/Version.h>
 #endif
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
-#include "DesktopPlatformModule.h"
+#include <DesktopPlatformModule.h>
 #else
-#include "Kismet/GameplayStatics.h"
+#include <Kismet/GameplayStatics.h>
 #endif
 
 UTableObject::UTableObject(const FObjectInitializer& Initializer) : Super(Initializer)
@@ -293,7 +293,7 @@ void UTableObject::NotifyUpdate_Internal() const
 {
 	if (OnTableUpdated.IsBound())
 	{
-		OnTableUpdated.Broadcast();
+		AsyncTask(ENamedThreads::GameThread, [this] { OnTableUpdated.Broadcast(); });
 	}
 }
 
@@ -301,6 +301,6 @@ void UTableObject::NotifyProgress_Internal(const float InProgress) const
 {
 	if (OnTableExportProgressChanged.IsBound())
 	{
-		OnTableExportProgressChanged.Broadcast(InProgress);
+		AsyncTask(ENamedThreads::GameThread, [this, InProgress] { OnTableExportProgressChanged.Broadcast(InProgress); });
 	}
 }

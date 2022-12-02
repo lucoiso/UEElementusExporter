@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "UObject/Object.h"
+#include <CoreMinimal.h>
+#include <UObject/Object.h>
 #include "TableObject.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTableUpdated);
